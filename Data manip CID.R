@@ -68,7 +68,7 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
                               "Hammersmith & Fulham" = "Hammersmith and Fulham")
 
 
-# map borough level data of count
+#a) map borough level data of count
 count_cycle_lanesBYborough = non_geom_f_cycle_lane_track %>%
   group_by(BOROUGH) %>%
   summarise(count = n())
@@ -96,8 +96,32 @@ l_cycle_lanesBYborough = left_join(boroughs, length_cycle_lanesBYborough)
 # plot sum of lengths by brough
 qtm(l_cycle_lanesBYborough, "length") # Need to alter legend 
 
+legend_length = expression("Total length (m)")
+tm_shape(l_cycle_lanesBYborough) +
+  tm_polygons("length", title = "Total length (m)", style = "pretty", palette = "Blues") +
+  tm_layout("Total length of cycle track and lanes by borough",
+            legend.title.size = 1,
+            legend.text.size = 0.6,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)
 
+#c) map borough level data for proportion of count
+prop_cycle_lanesBYborough = non_geom_f_cycle_lane_track %>%
+  group_by(BOROUGH) %>%
+  summarise(per = paste0(round(count/sum(count)*100, 2), "%"))
 
+  mutate(countT = sum(count)) %>%
+  group_by(type, add = TRUE) %>%
+  mutate(per = paste0(round(100*count/countT, 2), "%"))
+  
+# delete 'NA' row
+count_cycle_lanesBYborough = count_cycle_lanesBYborough[-c(34),]
+
+# join numbers to geometry
+n_cycle_lanesBYborough = left_join(boroughs, count_cycle_lanesBYborough)
+
+# plot counts
+qtm(n_cycle_lanesBYborough, "count") # works!!!
 
 
 # Read in London Boroughs to add to map
