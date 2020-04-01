@@ -123,7 +123,7 @@ tmap_save(Percent_crossings_borough_map, filename = "./Maps/Percent_crossings_bo
 
 
 # Overall map of cycling infrastructure
-map_crossings = mapview(f_crossings$geometry, colour = "blue")
+map_crossings = mapview(f_crossings$geometry, color = "blue")
 mapshot(map_crossings, file = paste0(getwd(),"/Maps/","All_crossings_map.png"),
         remove_controls = c("zoomControl", "layersControl", "homeButton"))
 

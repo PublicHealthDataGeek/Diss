@@ -42,7 +42,7 @@ f_variables = c("CLT_CARR", "CLT_SEGREG", "CLT_STEPP", "CLT_PARSEG", "CLT_SHARED
                 "CLT_PARKR", "CLT_WATERR", "CLT_PTIME", "CLT_COLOUR")
 
 # convert columns to factors (BOROUGH needs doing separately as it has some NAs in, CLT_ACCESS not converted as 721 different values)
-f_cycle_lane_track = cycle_lane_track %<>%
+f_cycle_lane_track = cycle_lane_track %>%
   mutate_at(f_variables, as.factor)
 f_cycle_lane_track$BOROUGH = factor(cycle_lane_track$BOROUGH, exclude = NULL)
 
