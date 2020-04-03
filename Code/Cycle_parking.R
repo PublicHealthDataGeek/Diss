@@ -47,7 +47,7 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
                               "Hammersmith & Fulham" = "Hammersmith and Fulham")
 
 
-#a) map borough level data of count
+#a) map borough level data of number of parking facilities
 count_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
   group_by(BOROUGH) %>%
   summarise(count = n())
@@ -115,120 +115,70 @@ Secure_parking_borough_map = tm_shape(secure_cycle_parkingBYborough) +
             legend.bg.alpha = 1)
 tmap_save(Secure_parking_borough_map, filename = "./Maps/Count_secure_parking_borough_map.png")
   
+
+
 # Bike parking capacity by borough
-
-ggplot(data = non_geom_f_cycle_parking) +
-  geom_boxplot(mapping = aes(x = PRK_CPT))
-
-non_geom_f_cycle_parking %>%
-  summarise(count = n())
-  
-summary(non_geom_f_cycle_parking$PRK_CPT)
-
-capacity_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
+# This code maps all boroughs correctly apart from Newham and Southwark where they are NA
+wrong_capacity_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
+  select(BOROUGH, PRK_CPT) %>%
   group_by(BOROUGH) %>%
   summarise("Cycle capacity" = sum(PRK_CPT))
 
-
-## but then having issues below with 2 boroughs (newark and southwark accordig to above) having NA no capacity!!!??
-
-# the below code doesnt work either.  
-p = aggregate(non_geom_f_cycle_parking$PRK_CPT, by=list(BOROUGH = non_geom_f_cycle_parking$BOROUGH), FUN=sum)
-
-
-x = non_geom_f_cycle_parking %>%
-  group_by(BOROUGH)
-
-y = x %>%
-  filter(BOROUGH == "Newham") %>%
-  summarise(Frequency = sum(PRK_CPT))
-
-
-x = non_geom_f_cycle_parking %>%
-  group_by(BOROUGH) %>%
-  summarise(n = n()) 
-
-%>%
-  mutate(Capacity = sum(n))
-
 # join numbers to geometry - this is wehre the coding starts again once I figure out what is wrong
-capacity_cycle_parkingBYborough = left_join(boroughs, capacity_cycle_parkingBYborough)
+wrong_capacity_cycle_parkingBYborough = left_join(boroughs, wrong_capacity_cycle_parkingBYborough)
 
-qtm(capacity_cycle_parkingBYborough, "Cycle capacity") 
+qtm(wrong_capacity_cycle_parkingBYborough, "Cycle capacity")
 
-
-tm_shape(capacity_cycle_parkingBYborough) +
-  tm_polygons("Cycle capacity", style = "fixed", palette = "Purples", 
-              breaks = c(1, 2000, 4000, 6000, 8000, 10000, 12000, 14000),
-              textNA = "Zero secure cycle parking",
-              colorNA = "grey") +
+wrong_capacity_cycle_parkingBYborough = tm_shape(correct_capacity_cycle_parkingBYborough) +
+  tm_polygons("Cycle capacity", style = "fixed", palette = "YlOrRd", 
+              breaks = c(1, 2000, 4000, 6000, 8000, 10000, 12000, 14000)) +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("right","bottom"),
             legend.bg.alpha = 1)
+tmap_save(wrong_capacity_cycle_parkingBYborough, filename = "./Maps/WRONG_capacity_parking_borough_map.png")
+
+# Investigating issue with Newham and Southwark
+data = non_geom_f_cycle_parking %>%
+  select(BOROUGH, PRK_CPT) 
+str(data) # Borough is a factor with 33 levels, PRK_CPT is an integer
+
+n_s = data %>%
+  filter(BOROUGH == "Newham" | BOROUGH == "Southwark") # just get Newham and Southwark
+
+unique(n_s$BOROUGH)  # Southwark, Newham but states 33 levels of factors.  
+unique(n_s$PRK_CPT) # integers but there is a NA category.
+
+wrong_n_s = n_s %>%
+  group_by(BOROUGH) %>%
+  summarise("Cycle capacity" = sum(PRK_CPT)) # => NA
+
+# So address NAs
+correct_n_s = n_s %>%
+  mutate_if(is.integer, ~replace(PRK_CPT, is.na(PRK_CPT), 0))
+
+unique(correct_n_s$PRK_CPT) # now there are no NAs
 
 
-tmap_save(Secure_parking_borough_map, filename = "./Maps/Count_secure_parking_borough_map.png")
-  
+# Redo maps with correct results by sorting out NAs
+correct_capacity_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
+  select(BOROUGH, PRK_CPT) %>%
+  mutate_if(is.integer, ~replace(PRK_CPT, is.na(PRK_CPT), 0)) %>%
+  group_by(BOROUGH) %>%
+  summarise("Cycle capacity" = sum(PRK_CPT))
 
+# join numbers to geometry 
+correct_capacity_cycle_parkingBYborough = left_join(boroughs, correct_capacity_cycle_parkingBYborough)
+qtm(correct_capacity_cycle_parkingBYborough, "Cycle capacity")  # Test map works
 
-
-
-#### EXTRA CODE
-
-
-
-
-
-
-
-
-# Types of cycle parking
-park_type = non_geom_f_cycle_parking %>%
-  dplyr::select(BOROUGH, PRK_LOCKER, PRK_SHEFF, PRK_MSTAND, PRK_PSTAND, 
-         PRK_HOOP, PRK_POST, PRK_BUTERF, PRK_WHEEL)
-
-park_type = as.data.frame(sapply(park_type, table))
-
-park_type = park_type %>%
-  pivot_longer(cols = PRK_LOCKER:PRK_WHEEL, names_to = "Parking", values_to = "count") %>%
-  slice(9:n())
-
-
-x = non_geom_f_cycle_parking %>%
-  dplyr::select(BOROUGH, PRK_LOCKER, PRK_SHEFF, PRK_MSTAND, PRK_PSTAND, 
-                PRK_HOOP, PRK_POST, PRK_BUTERF, PRK_WHEEL)
-
-x = "FALSE"
-y$PRK_LOCKER = droplevels(x)
-
-
-
-y = as.data.frame(sapply(park_type, table))
-
-z = y %>%
-  pivot_longer(cols = PRK_LOCKER:PRK_WHEEL, names_to = "Parking", values_to = "count") %>%
-  slice(9:n())
-
-
-
-ggplot(data = y) +
-  geom_bar(mapping = aes(x = TRUE))
-
-
-
-x = park_type %>%
-  summarise(value = mean(value),
-            n_true = sum(Factor == TRUE))
-            
-y = fct_count(park_type$PRK_LOCKER)
-
-y = sapply(park_type, table)
-
-
-            
-            count(all(TRUE))
-)
+Correct_capacity_cycle_parkingBYborough = tm_shape(correct_capacity_cycle_parkingBYborough) +
+  tm_polygons("Cycle capacity", style = "fixed", palette = "YlOrRd", 
+              breaks = c(1, 2000, 4000, 6000, 8000, 10000, 12000, 14000)) +
+  tm_layout(legend.title.size = 1,
+            legend.text.size = 0.7,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)
+tmap_save(Correct_capacity_cycle_parkingBYborough, filename = "./Maps/CORRECT_capacity_parking_borough_map.png")
 
 
 
