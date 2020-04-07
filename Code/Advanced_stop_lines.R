@@ -18,8 +18,21 @@ library(geojsonsf)
 advanced_stop_line = get_cid_lines(type = "advanced_stop_line")
 
 
-class(advanced_stop_line) "sf"         "tbl_df"     "tbl"        "data.frame"
+class(advanced_stop_line) # "sf"         "tbl_df"     "tbl"        "data.frame"
 str(advanced_stop_line)
+
+# check completeness of variables
+unique(advanced_stop_line$FEATURE_ID) # 3775 unique variables
+unique(advanced_stop_line$BOROUGH) # 33 Boroughs plus a NA group
+unique(advanced_stop_line$SVDATE) # 290 unique survey dates, all of which are valid date
+# the below all have just true and false apart fro colour that has 6 options
+unique(advanced_stop_line$ASL_FDR)
+unique(advanced_stop_line$ASL_FDRLFT)
+unique(advanced_stop_line$ASL_FDCENT)
+unique(advanced_stop_line$ASL_FDRIGH)
+unique(advanced_stop_line$ASL_SHARED)
+unique(advanced_stop_line$ASL_COLOUR)
+
 
 # convert certain columns to factors
 levels(advanced_stop_line$ASL_FDR) # => NULL
@@ -38,11 +51,25 @@ levels(f_advanced_stop_line$BOROUGH) # check have 34 (33 actual boroughs plus 1 
 # create new df without geommetry that enables faster analysis of data
 non_geom_f_advanced_stop_line = st_drop_geometry(f_advanced_stop_line)
 str(non_geom_f_advanced_stop_line)
-non_geom_f_advanced_stop_line %>%
-  count(ASL_FDR)  
+count_borough = non_geom_f_advanced_stop_line %>%
+  count(BOROUGH)  
+
+
+# system time to check speed of actions on geog/nongeog datasets
+system.time(non_geom_f_advanced_stop_line %>%
+             count(BOROUGH)) # elapsed = 0.003
+system.time(f_advanced_stop_line %>%
+             count(BOROUGH)) # 0.559
+
 
 # create summary of df
 view(dfSummary(non_geom_f_advanced_stop_line))
+
+# examine URL data
+count_photo1 =  non_geom_f_advanced_stop_line %>%
+  count(PHOTO1_URL) # 48 have no asset photo 1
+count_photo2 =  non_geom_f_advanced_stop_line %>%
+  count(PHOTO2_URL) # 51 have no asset photo 2
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -56,9 +83,11 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 count_ASLBYborough = non_geom_f_advanced_stop_line %>%
   group_by(BOROUGH) %>%
   summarise(count = n())
+summary(count_ASLBYborough$count)
+sd(count_ASLBYborough$count)
 
 # delete 'NA' row
-count_ASLBYborough = count_cASLBYborough[-c(34),]
+count_ASLBYborough = count_ASLBYborough[-c(34),]
 
 # join numbers to geometry
 n_ASLBYborough = left_join(boroughs, count_ASLBYborough)
@@ -69,6 +98,11 @@ qtm(n_ASLBYborough, "count") # works!!!
 # b) Map borough level data on infrastructure length
 # add column for length of each line
 f_advanced_stop_line$length = st_length(f_advanced_stop_line$geometry)
+summary(f_advanced_stop_line$length)
+sd(f_advanced_stop_line$length)
+boxplot(f_advanced_stop_line$length)
+hist(f_advanced_stop_line$length)
+
 
 # create new df without geommetry that enables faster analysis of data
 non_geom_length_advanced_stop_line = st_drop_geometry(f_advanced_stop_line)
@@ -83,9 +117,8 @@ length_ASLBYborough = length_ASLBYborough[-c(34),]
 # join numbers to geometry
 l_ASLBYborough = left_join(boroughs, length_ASLBYborough)
 
-# plot sum of lengths by brough
-qtm(l_ASLBYborough, "length") # Need to alter legend 
-
+# plot sum of lengths by borough
+qtm(l_ASLBYborough, "length")
 
 Length_ASL_borough_map = tm_shape(l_ASLBYborough) +
   tm_polygons("length", title = "Total length (m)", style = "pretty", palette = "Blues") +

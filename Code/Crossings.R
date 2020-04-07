@@ -22,6 +22,17 @@ crossings = get_cid_lines(type = "crossing")
 class(crossings) # => "sf"         "tbl_df"     "tbl"        "data.frame"
 str(crossings) # 1687 obs, 11 variables
 
+# check completeness of variables
+unique(crossings$FEATURE_ID) # 1687 unique variables
+unique(crossings$BOROUGH) # 33 Boroughs plus a NA group
+unique(crossings$SVDATE) # 257 unique survey dates, all of which are valid date
+# the below all have just true and false
+unique(crossings$CRS_SIGNAL)
+unique(crossings$CRS_CYGAP)
+unique(crossings$CRS_LEVEL)
+unique(crossings$CRS_PEDEST)
+unique(crossings$CRS_SEGREG)
+
 # convert certain columns to factors
 levels(crossings$CRS_SIGNAL) # => NULL
 
@@ -39,11 +50,21 @@ levels(f_crossings$BOROUGH) # check have 34 (33 actual boroughs plus 1 NA value)
 # create new df without geommetry that enables faster analysis of data
 non_geom_f_crossings = st_drop_geometry(f_crossings)
 str(non_geom_f_crossings)
-non_geom_f_crossings %>%
-  count(CRS_SIGNAL)  
+count_borough = non_geom_f_crossings %>%
+  count(BOROUGH)  
+
+
 
 # create summary of df
 view(dfSummary(non_geom_f_crossings))
+summary(f_crossings$length)
+sd(f_crossings$length)
+
+# examine URL data
+count_photo1 =  non_geom_f_crossings %>%
+  count(PHOTO1_URL) # 31 have no asset photo 1
+count_photo2 =  non_geom_f_crossings %>%
+  count(PHOTO2_URL) # 32 have no asset photo 2
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -57,6 +78,8 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 count_crossingsBYborough = non_geom_f_crossings %>%
   group_by(BOROUGH) %>%
   summarise(count = n())
+summary(count_crossingsBYborough$count)
+sd(count_crossingsBYborough$count)
 
 # delete 'NA' row
 count_crossingsBYborough = count_crossingsBYborough[-c(34),]
@@ -64,12 +87,20 @@ count_crossingsBYborough = count_crossingsBYborough[-c(34),]
 # join numbers to geometry
 n_crossingsBYborough = left_join(boroughs, count_crossingsBYborough)
 
+
+
 # plot counts
 qtm(n_crossingsBYborough, "count") # works!!!
 
 # b) Map borough level data on infrastructure length
 # add column for length of each line
 f_crossings$length = st_length(f_crossings$geometry)
+summary(f_crossings$length)
+sd(f_crossings$length)
+boxplot(f_crossings$length)
+hist(f_crossings$length)
+
+
 
 # create new df without geommetry that enables faster analysis of data
 non_geom_length_f_crossings = st_drop_geometry(f_crossings)

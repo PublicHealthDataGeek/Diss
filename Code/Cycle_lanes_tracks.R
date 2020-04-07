@@ -15,24 +15,35 @@ library(forcats)
 library(geojsonsf)
 
 # download CID data using the Cycle Infra Lnd package
-# lines
 cycle_lane_track = get_cid_lines(type = "cycle_lane_track") # n = 24976
-crossings = get_cid_lines(type = "crossing")
-advanced_stop_line = get_cid_lines(type = "advanced_stop_line")
-restricted_route = get_cid_lines(type = "restricted_route")
-
-# points
-signal = get_cid_points(type = "signal")
-cycle_parking = get_cid_points(type = "cycle_parking")
-restricted_point = get_cid_points(type = "restricted_point")
-signage = get_cid_points(type = "signage")
-traffic_calming = get_cid_points(type = "traffic_calming")
-
-
-# a) CYCLE LANES AND TRACKS -----------------------------------------------
 
 class(cycle_lane_track)
 str(cycle_lane_track)
+
+# check completeness of variables
+unique(cycle_lane_track$FEATURE_ID) # 24976 unique variables
+unique(cycle_lane_track$BOROUGH) # 33 Boroughs plus a NA group
+unique(cycle_lane_track$SVDATE) # 345 unique survey dates, all of which are valid date
+date$SVDATE = cycle_lane_track$SVDATE
+
+# the below all have just true and false except where stated
+unique(cycle_lane_track$CLT_CARR)
+unique(cycle_lane_track$CLT_SEGREG)
+unique(cycle_lane_track$CLT_STEPP)
+unique(cycle_lane_track$CLT_PARSEG)
+unique(cycle_lane_track$CLT_SHARED) # "FALSE" "TRUE"  "TCB" 
+unique(cycle_lane_track$CLT_MANDAT) # "FALSE" "TRUE"  "TCB" 
+unique(cycle_lane_track$CLT_ADVIS)
+unique(cycle_lane_track$CLT_PRIORI) # FALSE" "TRUE"  "TRE"
+unique(cycle_lane_track$CLT_CONTRA)
+unique(cycle_lane_track$CLT_BIDIRE)
+unique(cycle_lane_track$CLT_CBYPAS)
+unique(cycle_lane_track$CLT_BBYPAS)
+unique(cycle_lane_track$CLT_PARKR)
+unique(cycle_lane_track$CLT_WATERR)
+unique(cycle_lane_track$CLT_PTIME)
+unique(cycle_lane_track$CLT_ACCESS) # NA plus 724 other unique text responses 
+unique(cycle_lane_track$CLT_COLOUR) # "NONE"        "GREEN"       "RED"         "BUFF/YELLOW" "BLUE"        "OTHER"       "BUFF" 
 
 # convert certain columns to factors
 levels(cycle_lane_track$CLT_CARR) # => NULL
@@ -52,11 +63,17 @@ levels(f_cycle_lane_track$BOROUGH) # check have 34 (33 actual boroughs plus 1 NA
 # create new df without geommetry that enables faster analysis of data
 non_geom_f_cycle_lane_track = st_drop_geometry(f_cycle_lane_track)
 str(non_geom_f_cycle_lane_track)
-non_geom_f_cycle_lane_track %>%
-  count(CLT_CARR)  
+count_borough = non_geom_f_cycle_lane_track %>%
+  count(BOROUGH)  
 
 # create summary of df
 view(dfSummary(non_geom_f_cycle_lane_track))
+
+# examine URL data
+count_photo1 =  non_geom_f_cycle_lane_track %>%
+  count(PHOTO1_URL) # 588 have no asset photo 1
+count_photo2 =  non_geom_f_cycle_lane_track %>%
+  count(PHOTO2_URL) # 605 have no asset photo 2
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -74,6 +91,11 @@ count_cycle_lanesBYborough = non_geom_f_cycle_lane_track %>%
 # delete 'NA' row
 count_cycle_lanesBYborough = count_cycle_lanesBYborough[-c(34),]
 
+# count number of lanes by borough
+summary(count_cycle_lanesBYborough$count)
+sd(count_cycle_lanesBYborough$count)
+
+
 # join numbers to geometry
 n_cycle_lanesBYborough = left_join(boroughs, count_cycle_lanesBYborough)
 
@@ -84,8 +106,15 @@ qtm(n_cycle_lanesBYborough, "count") # works!!!
 # add column for length of each line
 f_cycle_lane_track$length = st_length(f_cycle_lane_track$geometry)
 
+# get some summary data
+summary(f_cycle_lane_track$length)
+sd(f_cycle_lane_track$length)
+sum(f_cycle_lane_track$length) # = 2906338
+
 # create new df without geommetry that enables faster analysis of data
 non_geom_length_cycle_lane_track = st_drop_geometry(f_cycle_lane_track)
+
+
 
 length_cycle_lanesBYborough = non_geom_length_cycle_lane_track %>%
   group_by(BOROUGH) %>%
@@ -145,8 +174,21 @@ mapshot(map_cycle_lanes, file = paste0(getwd(),"/Maps/","All_cycle_lanes_map.png
 seg_cycle_lane = f_cycle_lane_track %>%
   filter(CLT_SEGREG ==TRUE)
 
+# ai) do some length calculations
 total_length_seg = sum(seg_cycle_lane$length) # = 93704m
-total_length_all = sum(length_cycle_lanesBYborough$length) # = 2708931m
+
+partial_seg = f_cycle_lane_track %>%
+  filter(CLT_PARSEG == TRUE)
+sum(partial_seg$length) # = 251143.8 [m]
+
+stepped = f_cycle_lane_track %>%
+  filter(CLT_STEPP == TRUE)
+sum(stepped$length) # = 7736.878 [m]
+
+shared = f_cycle_lane_track %>%
+  filter(CLT_SHARED == TRUE)
+sum(shared$length) # = 1898026 [m]
+
 
 seg_cycle_lanes = mapview(seg_cycle_lane$geometry, color = "red") # map it
 
@@ -174,7 +216,7 @@ off_cycle_lane = f_cycle_lane_track %>%
 
 total_length_on = sum(on_cycle_lane$length) # = 944165.6m
 total_length_off = sum(off_cycle_lane$length) # = 1962172m
-total_length_all = sum(length_cycle_lanesBYborough$length) # = 2708931m
+total_length_all = sum(f_cycle_lane_track$length) # = 2906338
 
 off_cycle_lanes = mapview(off_cycle_lane$geometry, color = "green") # map it
 on_cycle_lanes = mapview(on_cycle_lane$geometry, color = "red") # map it
@@ -186,5 +228,10 @@ y = mapview(off_cycle_lane$geometry, color = "green") + mapview(open_TFL_CR$geom
 sync(x, y, no.initial.sync = FALSE)   # maps of on and off carriageway with TFL CR                           
 
 
+# system time to check speed of actions on geog/nongeog datasets
+system.time(non_geom_f_cycle_lane_track %>%
+              count(BOROUGH)) # elapsed = 0.017
+system.time(f_cycle_lane_track %>%
+              count(BOROUGH)) # 10.446 
 
 
