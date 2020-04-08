@@ -19,6 +19,19 @@ cycle_parking = get_cid_points(type = "cycle_parking")
 class(cycle_parking)
 str(cycle_parking)
 
+# check completeness of variables
+unique(cycle_parking$FEATURE_ID) # 23758 unique variables
+unique(cycle_parking$BOROUGH) # 33 Boroughs no NAS
+unique(cycle_parking$SVDATE) # 331 unique survey dates, all of which are valid date
+# the below all have just true and false
+unique(crossings$CRS_SIGNAL)
+unique(crossings$CRS_CYGAP)
+unique(crossings$CRS_LEVEL)
+unique(crossings$CRS_PEDEST)
+unique(crossings$CRS_SEGREG)
+
+
+
 # convert certain columns to factors
 f_variables = c("PRK_CARR", "PRK_COVER", "PRK_SECURE", "PRK_LOCKER", "PRK_SHEFF", "PRK_MSTAND",
                 "PRK_PSTAND", "PRK_HOOP", "PRK_POST", "PRK_BUTERF", "PRK_WHEEL", "PRK_HANGAR",
@@ -38,6 +51,12 @@ str(non_geom_f_cycle_parking)
 
 # create summary of df
 view(dfSummary(non_geom_f_cycle_parking))
+
+# examine URL data
+count_photo1 =  non_geom_f_cycle_parking %>%
+  count(PHOTO1_URL) # 299 have no asset photo 1
+count_photo2 =  non_geom_f_cycle_parking %>%
+  count(PHOTO2_URL) # 298 have no asset photo 2
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
