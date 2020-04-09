@@ -201,8 +201,14 @@ TFL_CR = geojson_sf(urlCR)
 
 open_TFL_CR = TFL_CR %>%
   filter(Status == "Open") # limit to infrastructure that is open
-mapview(open_TFL_CR$geometry) + mapview(f_restricted_route, color = "red")
+mapview(open_TFL_CR$geometry) + mapview(f_restricted_route, color = "red", legend = FALSE)
 
 
 # Create synchronised map of CID seg lanes v open TFL cycle routes 
 sync(seg_cycle_lanes, map_open_TFL_CR, no.initial.sync = FALSE) 
+
+# Create overlapping map of Signal and TFL cycle routes with one side zoomed in
+w = mapview(f_restricted_route, color = "red", cex = 1, legend = FALSE) + mapview(open_TFL_CR$geometry, lwd = 3)
+x = mapview(f_restricted_route, color = "red", cex = 1, legend = FALSE) + mapview(open_TFL_CR$geometry, lwd = 3)
+sync(w, x, sync = "none") 
+

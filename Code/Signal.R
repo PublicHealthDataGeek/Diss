@@ -16,9 +16,22 @@ library(geojsonsf)
 
 # download CID data using the Cycle Infra Lnd package
 
-signal = get_cid_points(type = "signal")
+signal = get_cid_points(type = "signal") # n = 443
 class(signal)
 str(signal)
+
+# check completeness of variables
+unique(signal$FEATURE_ID) # 443 unique variables
+unique(signal$BOROUGH) # 23 Boroughs, no NAS
+unique(signal$SVDATE) # 111 unique survey dates, all of which are valid dates
+
+# the below all have just true and false
+unique(signal$SIG_HEAD)
+unique(signal$SIG_SEPARA)
+unique(signal$SIG_EARLY)
+unique(signal$SIG_TWOSTG)
+unique(signal$SIG_GATE)
+
 
 # convert certain columns to factors
 f_variables = c("SIG_HEAD", "SIG_SEPARA", "SIG_EARLY", "SIG_TWOSTG", "SIG_GATE")
@@ -34,11 +47,18 @@ levels(f_signal$BOROUGH) # only have 23 and no NA value
 # create new df without geommetry that enables faster analysis of data
 non_geom_f_signal = st_drop_geometry(f_signal)
 str(non_geom_f_signal)
-non_geom_f_signal %>%
-  count(SIG_HEAD)  
+x = non_geom_f_signal %>%
+  count(BOROUGH)  
 
 # create summary of df
 view(dfSummary(non_geom_f_signal))
+
+# examine URL data
+count_photo1 =  non_geom_f_signal %>%
+  count(PHOTO1_URL) # 8 have no asset photo 1
+count_photo2 =  non_geom_f_signal %>%
+  count(PHOTO2_URL) # 8 have no asset photo 2
+
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -67,13 +87,12 @@ Count_signal_borough_map = tm_shape(n_signalBYborough) +
               breaks = c(1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
               textNA = "Zero signals",
               colorNA = "grey") +
-  tm_text("count") +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("right","bottom"),
             legend.bg.alpha = 1)
   
-tmap_save(Count_signal_borough_map, filename = "./Maps/Count_signal_borough_map.png")
+tmap_save(Count_signal_borough_map, filename = "./Maps/Signals/Count_signal_borough_map.png")
 
 # Overall map of signals
 map_signals
@@ -97,3 +116,8 @@ sync(map_signals, map_open_TFL_CR, no.initial.sync = FALSE)
 
 # Create overlapping map of Signal and TFL cycle routes
 mapview(f_signal$geometry, color = "blue", cex = 1) + mapview(open_TFL_CR$geometry)
+
+# Create overlapping map of Signal and TFL cycle routes with one side zoomed in
+x = mapview(f_signal$geometry, color = "blue", cex = 1) + mapview(open_TFL_CR$geometry)
+y = mapview(f_signal$geometry, color = "blue", cex = 1) + mapview(open_TFL_CR$geometry)
+sync(x, y, sync = "none") 

@@ -19,6 +19,15 @@ restricted_points = get_cid_points(type = "restricted_point")
 class(restricted_points)
 str(restricted_points)
 
+# check completeness of variables
+unique(restricted_points$FEATURE_ID) # 180 unique variables
+unique(restricted_points$BOROUGH) # 27 Boroughs, no NAS
+unique(restricted_points$SVDATE) # 73 unique survey dates, all of which are valid dates
+
+# the below all have just true and false
+unique(restricted_points$RST_STEPS)
+unique(restricted_points$RST_LIFT)
+
 # convert certain columns to factors
 f_variables = c("RST_STEPS", "RST_LIFT")
 
@@ -36,6 +45,15 @@ str(non_geom_f_restricted_points)
 
 # create summary of df
 view(dfSummary(non_geom_f_restricted_points))
+x = non_geom_f_restricted_points %>%
+  count(BOROUGH)  
+
+# examine URL data
+count_photo1 =  non_geom_f_restricted_points %>%
+  count(PHOTO1_URL) # 12 have no asset photo 1
+count_photo2 =  non_geom_f_restricted_points %>%
+  count(PHOTO2_URL) # 12 have no asset photo 2
+
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -85,3 +103,8 @@ open_TFL_CR = TFL_CR %>%
 # Create overlapping map of Restriced points and TFL cycle routes
 mapview(f_restricted_points$geometry, color = "red", cex = 1) + mapview(open_TFL_CR$geometry, lwd = 3)
 
+
+# Create overlapping map of Signal and TFL cycle routes with one side zoomed in
+x = mapview(f_restricted_points$geometry, color = "red", cex = 1) + mapview(open_TFL_CR$geometry, lwd = 3)
+y = mapview(f_restricted_points$geometry, color = "red", cex = 1) + mapview(open_TFL_CR$geometry, lwd = 3)
+sync(x, y, sync = "none") 

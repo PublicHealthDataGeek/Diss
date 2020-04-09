@@ -23,13 +23,26 @@ str(cycle_parking)
 unique(cycle_parking$FEATURE_ID) # 23758 unique variables
 unique(cycle_parking$BOROUGH) # 33 Boroughs no NAS
 unique(cycle_parking$SVDATE) # 331 unique survey dates, all of which are valid date
-# the below all have just true and false
-unique(crossings$CRS_SIGNAL)
-unique(crossings$CRS_CYGAP)
-unique(crossings$CRS_LEVEL)
-unique(crossings$CRS_PEDEST)
-unique(crossings$CRS_SEGREG)
+# the below all have just true and false unless stated
+unique(cycle_parking$PRK_CARR)
+unique(cycle_parking$PRK_COVER)
+unique(cycle_parking$PRK_SECURE)
+unique(cycle_parking$PRK_LOCKER)
+unique(cycle_parking$PRK_SHEFF)
+unique(cycle_parking$PRK_MSTAND)
+unique(cycle_parking$PRK_PSTAND)
+unique(cycle_parking$PRK_HOOP)
+unique(cycle_parking$PRK_POST)
+unique(cycle_parking$PRK_BUTERF)
+unique(cycle_parking$PRK_WHEEL)
+unique(cycle_parking$PRK_HANGAR)
+unique(cycle_parking$PRK_TIER)
+unique(cycle_parking$PRK_OTHER)
+unique(cycle_parking$PRK_CPT) # contains NA
+unique(cycle_parking$PRK_PROVIS) # contains NA
 
+sum(is.na(cycle_parking$PRK_PROVIS)) # 2 NAs
+sum(is.na(cycle_parking$PRK_CPT)) # 2 NAs
 
 
 # convert certain columns to factors
@@ -70,6 +83,8 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 count_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
   group_by(BOROUGH) %>%
   summarise(count = n())
+summary(count_cycle_parkingBYborough$count)
+sd(count_cycle_parkingBYborough$count)
 
 # join numbers to geometry
 n_cycle_parkingBYborough = left_join(boroughs, count_cycle_parkingBYborough)
@@ -79,13 +94,12 @@ qtm(n_cycle_parkingBYborough, "count")
   
 Cycle_parking_borough_map = tm_shape(n_cycle_parkingBYborough) +
   tm_polygons("count", style = "pretty", palette = "Greens") +
-  tm_text("count", size = 0.75) +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("right","bottom"),
             legend.bg.alpha = 1)
   
-tmap_save(Cycle_parking_borough_map, filename = "./Maps/Count_cycle_parking_borough_map.png")
+tmap_save(Cycle_parking_borough_map, filename = "./Maps/Parking/Count_cycle_parking_borough_map.png")
 
 # Overall map of cycle parking
 
@@ -135,6 +149,31 @@ Secure_parking_borough_map = tm_shape(secure_cycle_parkingBYborough) +
 tmap_save(Secure_parking_borough_map, filename = "./Maps/Count_secure_parking_borough_map.png")
   
 
+#c) map borough level data for proportion of count
+prop_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
+  group_by(BOROUGH) %>%
+  summarise(n = n()) %>%
+  mutate(Percentage = paste0(round(100 * n/sum(n), 0), '%'))
+
+# delete 'NA' row
+prop_cycle_parkingBYborough = prop_cycle_parkingBYborough[-c(34),]
+
+# join numbers to geometry
+percent_cycle_parkingBYborough = left_join(boroughs, prop_cycle_parkingBYborough)
+
+# plot % of cycle lanes/tracks by brough
+qtm(percent_cycle_parkingBYborough, "Percentage") # Need to alter legend 
+
+Percent_cycle_parking_borough_map = tm_shape(percent_cycle_parkingBYborough) +
+  tm_polygons("Percentage", style = "pretty", palette = "Oranges") +
+  tm_layout(legend.title.size = 1,
+            legend.text.size = 0.7,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)
+
+tmap_save(Percent_cycle_parking_borough_map, filename = "./Maps/Parking/Percent_cycle_parking_map.png")
+
+
 
 # Bike parking capacity by borough
 # This code maps all boroughs correctly apart from Newham and Southwark where they are NA
@@ -178,7 +217,6 @@ correct_n_s = n_s %>%
 
 unique(correct_n_s$PRK_CPT) # now there are no NAs
 
-
 # Redo maps with correct results by sorting out NAs
 correct_capacity_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
   select(BOROUGH, PRK_CPT) %>%
@@ -200,5 +238,18 @@ Correct_capacity_cycle_parkingBYborough = tm_shape(correct_capacity_cycle_parkin
 tmap_save(Correct_capacity_cycle_parkingBYborough, filename = "./Maps/CORRECT_capacity_parking_borough_map.png")
 
 
+
+
+# Obtain summary statistics for Provision and Capacity by recoding NA to 0
+summary_PRK_PROVIS = cycle_parking %>%
+  mutate_if(is.integer, ~replace(PRK_PROVIS, is.na(PRK_PROVIS), 0))
+summary(summary_PRK_PROVIS$PRK_PROVIS)
+sd(summary_PRK_PROVIS$PRK_PROVIS)
+
+
+summary_PRK_CPT = cycle_parking %>%
+  mutate_if(is.integer, ~replace(PRK_CPT, is.na(PRK_CPT), 0)) 
+summary(summary_PRK_CPT$PRK_CPT)
+sd(summary_PRK_CPT$PRK_CPT)
 
 
