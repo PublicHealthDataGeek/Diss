@@ -20,6 +20,20 @@ traffic_calming = get_cid_points(type = "traffic_calming")
 class(traffic_calming)
 str(traffic_calming)
 
+# check completeness of variables
+unique(traffic_calming$FEATURE_ID) # 58565 unique variables
+unique(traffic_calming$BOROUGH) # 33 Boroughs
+unique(traffic_calming$SVDATE) # 334 unique survey dates, all of which are valid date
+# the below all have just true and false
+unique(traffic_calming$TRF_RAISED)
+unique(traffic_calming$TRF_ENTRY)
+unique(traffic_calming$TRF_CUSHI)
+unique(traffic_calming$TRF_HUMP)
+unique(traffic_calming$TRF_SINUSO)
+unique(traffic_calming$TRF_BARIER)
+unique(traffic_calming$TRF_NAROW)
+unique(traffic_calming$TRF_CALM)
+
 # convert certain columns to factors
 f_variables = c("TRF_RAISED", "TRF_ENTRY", "TRF_CUSHI", "TRF_HUMP", "TRF_SINUSO",
                 "TRF_BARIER", "TRF_NAROW", "TRF_CALM")
@@ -36,9 +50,13 @@ levels(f_traffic_calming$BOROUGH) # have 33 and no NA value
 non_geom_f_traffic_calming = st_drop_geometry(f_traffic_calming)
 str(non_geom_f_traffic_calming)
 
-
 # create summary of df
 view(dfSummary(non_geom_f_traffic_calming))
+
+count_photo1 =  non_geom_f_traffic_calming %>%
+  count(PHOTO1_URL) # 805 have no asset photo 1
+count_photo2 =  non_geom_f_traffic_calming %>%
+  count(PHOTO2_URL) # 810 have no asset photo 2
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -112,7 +130,7 @@ mapview(raised_side_road_locations, color = "red", cex = 0.5, legend = FALSE ) +
   mapview(open_TFL_CR$geometry, lwd = 3) + 
   mapview(raised_junction_locations, color = "lightseagreen", cex = 0.5, legend = FALSE)
 
-
+# c)
 cushion_locations =  f_traffic_calming %>%
   select(TRF_CUSHI, geometry) %>%
   filter(TRF_CUSHI == TRUE)
@@ -121,5 +139,17 @@ hump_locations =  f_traffic_calming %>%
   select(TRF_HUMP, geometry) %>%
   filter(TRF_HUMP == TRUE)
 
-mapview(cushion_locations, color = "red", cex = 0.5, legend = FALSE ) +
-  mapview(hump_locations, color = "lightseagreen", cex = 0.5, legend = FALSE)
+mapview(cushion_locations, color = "orange", cex = 0.5, legend = FALSE ) +
+  mapview(hump_locations, color = "mediumorchid", cex = 0.5, legend = FALSE) +
+  mapview(open_TFL_CR$geometry, lwd = 3)
+#
+
+# Joint map left = speed hump cushions and right = raised junctions/side junctions
+
+x = mapview(cushion_locations, color = "lightseagreen", cex = 0.5, legend = FALSE ) +
+  mapview(hump_locations, color = "lightseagreen", cex = 0.5, legend = FALSE) +
+  mapview(open_TFL_CR$geometry, lwd = 3)
+y = mapview(raised_side_road_locations, color = "red", cex = 0.5, legend = FALSE ) +
+  mapview(raised_junction_locations, color = "red", cex = 0.5, legend = FALSE) +
+  mapview(open_TFL_CR$geometry, lwd = 3)
+sync(x, y)

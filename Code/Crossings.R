@@ -53,8 +53,6 @@ str(non_geom_f_crossings)
 count_borough = non_geom_f_crossings %>%
   count(BOROUGH)  
 
-
-
 # create summary of df
 view(dfSummary(non_geom_f_crossings))
 summary(f_crossings$length)
@@ -99,8 +97,6 @@ summary(f_crossings$length)
 sd(f_crossings$length)
 boxplot(f_crossings$length)
 hist(f_crossings$length)
-
-
 
 # create new df without geommetry that enables faster analysis of data
 non_geom_length_f_crossings = st_drop_geometry(f_crossings)
