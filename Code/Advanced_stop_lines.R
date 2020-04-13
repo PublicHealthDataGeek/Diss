@@ -17,7 +17,6 @@ library(geojsonsf)
 # download CID data using the Cycle Infra Lnd package
 advanced_stop_line = get_cid_lines(type = "advanced_stop_line")
 
-
 class(advanced_stop_line) # "sf"         "tbl_df"     "tbl"        "data.frame"
 str(advanced_stop_line)
 
@@ -33,9 +32,14 @@ unique(advanced_stop_line$ASL_FDRIGH)
 unique(advanced_stop_line$ASL_SHARED)
 unique(advanced_stop_line$ASL_COLOUR)
 
+# examine URL data
+count_photo1 =  advanced_stop_line %>%
+  count(PHOTO1_URL) # 48 have no asset photo 1
+count_photo2 =  advanced_stop_line %>%
+  count(PHOTO2_URL) # 51 have no asset photo 2
 
 # convert certain columns to factors
-levels(advanced_stop_line$ASL_FDR) # => NULL
+levels(advanced_stop_line$ASL_FDR) # => NULL ie not factors yet
 
 f_variables = c("ASL_FDR", "ASL_FDRLFT", "ASL_FDCENT", "ASL_FDRIGH", 
                 "ASL_SHARED", "ASL_COLOUR")
@@ -54,22 +58,14 @@ str(non_geom_f_advanced_stop_line)
 count_borough = non_geom_f_advanced_stop_line %>%
   count(BOROUGH)  
 
-
 # system time to check speed of actions on geog/nongeog datasets
 system.time(non_geom_f_advanced_stop_line %>%
              count(BOROUGH)) # elapsed = 0.003
 system.time(f_advanced_stop_line %>%
              count(BOROUGH)) # 0.559
 
-
 # create summary of df
 view(dfSummary(non_geom_f_advanced_stop_line))
-
-# examine URL data
-count_photo1 =  non_geom_f_advanced_stop_line %>%
-  count(PHOTO1_URL) # 48 have no asset photo 1
-count_photo2 =  non_geom_f_advanced_stop_line %>%
-  count(PHOTO2_URL) # 51 have no asset photo 2
 
 # Read in London Boroughs to add to map and code so can be joined to CID data
 boroughs <- st_read("./map_data/London_Borough_Excluding_MHW.shp")
@@ -78,13 +74,12 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
                               "Barking & Dagenham" = "Barking and Dagenham",
                               "Hammersmith & Fulham" = "Hammersmith and Fulham")
 
-
 #a) map borough level data of count
 count_ASLBYborough = non_geom_f_advanced_stop_line %>%
   group_by(BOROUGH) %>%
-  summarise(count = n())
-summary(count_ASLBYborough$count)
-sd(count_ASLBYborough$count)
+  summarise(Count = n())
+summary(count_ASLBYborough$Count)
+sd(count_ASLBYborough$Count)
 
 # delete 'NA' row
 count_ASLBYborough = count_ASLBYborough[-c(34),]
@@ -93,7 +88,18 @@ count_ASLBYborough = count_ASLBYborough[-c(34),]
 n_ASLBYborough = left_join(boroughs, count_ASLBYborough)
 
 # plot counts
-qtm(n_ASLBYborough, "count") # works!!!
+qtm(n_ASLBYborough, "Count") # works!!!
+
+count_ASL_map = tm_shape(n_ASLBYborough) +
+  tm_polygons("Count", style = "fixed", palette = "Greens",
+              breaks = c(1, 50, 100, 150, 200, 250, 300, 350)) +
+  tm_layout(legend.title.size = 1,
+            legend.text.size = 0.7,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)  
+
+tmap_save(count_ASL_map, filename = "./Maps/ASL/Count_ASL_map.png")
+
 
 # b) Map borough level data on infrastructure length
 # add column for length of each line

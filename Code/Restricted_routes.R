@@ -71,7 +71,7 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 #a) map borough level data of count
 count_restricted_routeBYborough = non_geom_f_restricted_route %>%
   group_by(BOROUGH) %>%
-  summarise(count = n())
+  summarise(Count = n())
 
 
 
@@ -82,7 +82,17 @@ count_restricted_routeBYborough = count_restricted_routeBYborough[-c(34),]
 n_restricted_routeBYborough = left_join(boroughs, count_restricted_routeBYborough)
 
 # plot counts
-qtm(n_restricted_routeBYborough, "count") # works!!!
+qtm(n_restricted_routeBYborough, "Count") # works!!!
+
+count_restricted_route_map = tm_shape(n_restricted_routeBYborough) +
+  tm_polygons("Count", style = "fixed", palette = "Greens",
+              breaks = c(1, 30, 60, 90, 120, 150)) +
+  tm_layout(legend.title.size = 1,
+            legend.text.size = 0.7,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)  
+
+tmap_save(count_restricted_route_map, filename = "./Maps/Restricted routes/Count_restricted_route_map.png")
 
 # b) Map borough level data on infrastructure length
 # add column for length of each line
@@ -101,7 +111,7 @@ non_geom_length_restricted_route = st_drop_geometry(f_restricted_route)
 
 length_restricted_routeBYborough = non_geom_length_restricted_route %>%
   group_by(BOROUGH) %>%
-  summarise(length = sum(length)) 
+  summarise(Length = sum(length)) 
 
 # delete 'NA' row
 length_restricted_routeBYborough = length_restricted_routeBYborough[-c(34),]
@@ -110,17 +120,17 @@ length_restricted_routeBYborough = length_restricted_routeBYborough[-c(34),]
 l_restricted_routeBYborough = left_join(boroughs, length_restricted_routeBYborough)
 
 # plot sum of lengths by brough
-qtm(l_restricted_routeBYborough, "length") # Need to alter legend 
+qtm(l_restricted_routeBYborough, "Length") # Need to alter legend 
 
 
 Length_restricted_route_borough_map = tm_shape(l_restricted_routeBYborough) +
-  tm_polygons("length", title = "Total length (m)", style = "pretty", palette = "Blues") +
+  tm_polygons("Length", title = "Total length (m)", style = "pretty", palette = "Blues") +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("left","bottom"),
             legend.bg.alpha = 1)
 
-tmap_save(Length_restricted_route_borough_map, filename = "./Maps/Length_restricted_routes_borough_map.png")
+tmap_save(Length_restricted_route_borough_map, filename = "./Maps/Restricted routes/Length_restricted_routes_borough_map.png")
 
 # map longest routes
 f_restricted_route$length_no_units = as.numeric(f_restricted_route$length)
@@ -175,23 +185,23 @@ mapview(f_restricted_route$geometry, color = "red") + mapview(f_cycle_lane_track
 
 # drawing Borough maps side by side
 Length_RR_borough_map = tm_shape(l_restricted_routeBYborough) +
-  tm_polygons("length", title = "Total length (m)", style = "pretty", palette = "Blues") +
+  tm_polygons("Length", title = "Total length (m)", style = "fixed", palette = "Blues",
+              breaks = c(1, 20000, 40000, 60000, 80000, 100000, 120000)) +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("left","bottom"),
             legend.bg.alpha = 1,
             legend.width = 1)
 
-Percent_RR_borough_map = tm_shape(percent_restricted_routeBYborough) +
-  tm_polygons("Percentage", style = "pretty", palette = "Oranges") +
+Count_RR_borough_map = tm_shape(n_restricted_routeBYborough) +
+  tm_polygons("Count", style = "fixed", palette = "Greens",
+              breaks = c(1, 30, 60, 90, 120, 150)) +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("left","bottom"),
-            legend.bg.alpha = 1,
-            legend.width = 1)
+            legend.bg.alpha = 1)  
 
-
-sbys_borough_RR_map = tmap_arrange(Percent_RR_borough_map, Length_RR_borough_map, ncol = 2, asp = 0.55)
+sbys_borough_RR_map = tmap_arrange(Count_RR_borough_map, Length_RR_borough_map, ncol = 2, asp = 0.55)
 tmap_save(sbys_borough_RR_map, filename = "./Maps/Restricted routes/Side_by_side_borough_map.png")
 
 

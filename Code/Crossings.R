@@ -75,9 +75,9 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 #a) map borough level data of count
 count_crossingsBYborough = non_geom_f_crossings %>%
   group_by(BOROUGH) %>%
-  summarise(count = n())
-summary(count_crossingsBYborough$count)
-sd(count_crossingsBYborough$count)
+  summarise(Count = n())
+summary(count_crossingsBYborough$Count)
+sd(count_crossingsBYborough$Count)
 
 # delete 'NA' row
 count_crossingsBYborough = count_crossingsBYborough[-c(34),]
@@ -87,8 +87,19 @@ n_crossingsBYborough = left_join(boroughs, count_crossingsBYborough)
 
 
 
-# plot counts
-qtm(n_crossingsBYborough, "count") # works!!!
+# a) plot counts
+qtm(n_crossingsBYborough, "Count") # works!!!
+
+count_crossing_map = tm_shape(n_crossingsBYborough) +
+  tm_polygons("Count", style = "fixed", palette = "Greens",
+              breaks = c(1, 20, 40, 60, 80, 100, 120, 140)) +
+  tm_layout(legend.title.size = 1,
+            legend.text.size = 0.7,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)  
+
+tmap_save(count_crossing_map, filename = "./Maps/Crossings/Count_crossing_map.png")
+
 
 # b) Map borough level data on infrastructure length
 # add column for length of each line

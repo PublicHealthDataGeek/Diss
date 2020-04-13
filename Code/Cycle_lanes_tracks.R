@@ -86,21 +86,35 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 #a) map borough level data of count
 count_cycle_lanesBYborough = non_geom_f_cycle_lane_track %>%
   group_by(BOROUGH) %>%
-  summarise(count = n())
+  summarise(Count = n())
 
 # delete 'NA' row
 count_cycle_lanesBYborough = count_cycle_lanesBYborough[-c(34),]
 
 # count number of lanes by borough
-summary(count_cycle_lanesBYborough$count)
-sd(count_cycle_lanesBYborough$count)
+summary(count_cycle_lanesBYborough$Count)
+sd(count_cycle_lanesBYborough$Count)
 
 
 # join numbers to geometry
 n_cycle_lanesBYborough = left_join(boroughs, count_cycle_lanesBYborough)
 
 # plot counts
-qtm(n_cycle_lanesBYborough, "count") # works!!!
+qtm(n_cycle_lanesBYborough, "Count") # works!!!
+
+count_cycle_lane_map = tm_shape(n_cycle_lanesBYborough) +
+  tm_polygons("Count", style = "fixed", palette = "Greens",
+              breaks = c(1, 200, 400, 600, 800, 1000, 1200, 1400)) +
+  tm_layout(legend.title.size = 1,
+            legend.text.size = 0.7,
+            legend.position = c("left","bottom"),
+            legend.bg.alpha = 1)  
+
+tmap_save(count_cycle_lane_map, filename = "./Maps/Cycle lanes/Count_cycle_lane_map.png")
+
+
+
+
 
 # b) Map borough level data on infrastructure length
 # add column for length of each line

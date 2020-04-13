@@ -82,23 +82,26 @@ boroughs$BOROUGH = fct_recode(boroughs$BOROUGH, "Kensington & Chelsea" = "Kensin
 #a) map borough level data of number of parking facilities
 count_cycle_parkingBYborough = non_geom_f_cycle_parking %>%
   group_by(BOROUGH) %>%
-  summarise(count = n())
-summary(count_cycle_parkingBYborough$count)
-sd(count_cycle_parkingBYborough$count)
+  summarise(Count = n())
+summary(count_cycle_parkingBYborough$Count)
+sd(count_cycle_parkingBYborough$Count)
 
 # join numbers to geometry
 n_cycle_parkingBYborough = left_join(boroughs, count_cycle_parkingBYborough)
 
 # plot counts of cycle counts by Borough
-qtm(n_cycle_parkingBYborough, "count")
+qtm(n_cycle_parkingBYborough, "Count")
   
 Cycle_parking_borough_map = tm_shape(n_cycle_parkingBYborough) +
-  tm_polygons("count", style = "pretty", palette = "Greens") +
+  tm_polygons("Count", style = "fixed", palette = "Greens",
+              breaks = c(1, 400,800, 1200, 1600, 2000, 2400)) +
   tm_layout(legend.title.size = 1,
             legend.text.size = 0.7,
             legend.position = c("right","bottom"),
             legend.bg.alpha = 1)
-  
+
+
+
 tmap_save(Cycle_parking_borough_map, filename = "./Maps/Parking/Count_cycle_parking_borough_map.png")
 
 # Overall map of cycle parking
