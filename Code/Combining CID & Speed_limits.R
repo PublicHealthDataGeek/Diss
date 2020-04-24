@@ -3,22 +3,14 @@ library(mapview)
 library(tidyverse)
 library(sf)
 library(ggmap)
+library(CycleInfraLnd)
 
-# Get CID data
+# Get traffic calming CID data for Westminster
 calming = get_cid_points(type = "traffic_calming")
-lane_track = get_cid_lines(type = "cycle_lane_track")
-asl = get_cid_lines(type = "advanced_stop_line")
-
-lane_track = lane_track%>%
-  filter(BOROUGH == "Westminster") # 589
-
 calming = calming %>%
   filter(BOROUGH == "Westminster") # 716
 
-asl = asl %>%
-  filter(BOROUGH == "Westminster") # 229
-
-# Get boundary box for Greater London
+# Get boundary box for Westminster
 Westxy = getbb("Westminster, UK", format_out = "polygon")
 
 # Get OSM speed limit data for highways in Westminster ------------------------------
@@ -79,8 +71,12 @@ boroughs = rename(boroughs, BOROUGH = NAME)
 # Create Westminster boundary shape
 West_bound = boroughs %>%
   filter(BOROUGH == "Westminster")
+Other = c("Camden", "Islington", "City of London", "Southwark", "Lambeth", "Wandsworth", "Kensington and Chelsea",
+          "Hammersmith and Fulham", "Brent")
+Otherbound = boroughs %>%
+  filter(BOROUGH %in% Other)
 
-# Do ggplot of the speed lilmits, rvier and boundaries of Westminster
+# Do ggplot of the speed limits, river and boundaries of Westminster
 ggplot() +
   geom_sf(data = West_bound) +
   geom_sf(data = FiveH$osm_lines, color = "#33a02c") +
@@ -92,7 +88,7 @@ ggplot() +
   theme_void() 
 
 # mapview object
-mapview(TwentyH$osm_lines, color = "#33a02c", layer.name = "20 mph or under") +
+mapview(TwentyH$osm_lines, color = "#33a02c", layer.name = "20 mph") +
   mapview(TenH$osm_lines, color = "#33a02c", legend = FALSE) +
   mapview(ThirtyH$osm_lines, color = "#ff7f00", layer.name = "30 mph") +
   mapview(FortyH$osm_lines, color = "#e31a1c", layer.name = "40 mph") +
@@ -122,11 +118,31 @@ Speed_limits = rbind(Five, Ten, Twen, Thir, Four)
 # Create mapview of highways in Westminster colour coded by max speed limit
 mapviewOptions(vector.palette = colorRampPalette(c("#33a02c", "#ff7f00", "#e31a1c")))
 mapview(Speed_limits, zcol = "maxspeed", layer.name = "Maximum speed limit") +
-  mapview(West_bound, col.regions = "beige", legend = FALSE)
+  mapview(West_bound, col.regions = "beige", alpha.regions = 0, legend = FALSE, lwd = 2, color = "black") +
+  mapview(Otherbound, col.regions = "white", alpha.regions = 6, legend = FALSE, lwd = 0.5)
+
+
+# Add traffic calming
+mapview(Speed_limits, zcol = "maxspeed", layer.name = "Maximum speed limit") +
+  mapview(West_bound, col.regions = "beige", alpha.regions = 0, legend = FALSE, lwd = 2, color = "black") +
+  mapview(Otherbound, col.regions = "white", alpha.regions = 6, legend = FALSE, lwd = 0.5) +
+  mapview(calming, legend = FALSE, cex = 2, color = 'blue') 
+
+# Generate comparison map 
+x = mapview(Speed_limits, zcol = "maxspeed", layer.name = "Maximum speed limit") +
+  mapview(West_bound, col.regions = "beige", alpha.regions = 0, legend = FALSE, lwd = 2, color = "black") +
+  mapview(Otherbound, col.regions = "white", alpha.regions = 6, legend = FALSE, lwd = 0.5)
+y = mapview(Speed_limits, zcol = "maxspeed", layer.name = "Maximum speed limit", legend = FALSE) +
+  mapview(West_bound, col.regions = "beige", alpha.regions = 0, legend = FALSE, lwd = 2, color = "black") +
+  mapview(Otherbound, col.regions = "white", alpha.regions = 6, legend = FALSE, lwd = 0.5) +
+  mapview(calming, legend = FALSE, cex = 1, color = 'blue') 
+sync(y,x)
 
 
 
-# Initial data analysis of OSM data ---------------------------------------
+
+
+# Initial data analysis of OSM data - SPEED COMPLICATED BY OSM INCLUDING RAIL LINE SPEED------------------
 
 # Plotting with just speed  - 
 # but after plotting discovered this includes railway lines that have these speeds!
@@ -185,3 +201,26 @@ Highway = opq(bbox = Westxy) %>%
 ggplot() +
   geom_sf(data = Highway$osm_lines, color = "#4daf4a")
 
+
+
+
+# Get OSM speed limit data for highways in Westminster ------------------------------
+FiveHx = opq(bbox = Westxy) %>%
+  add_osm_feature(key = "maxspeed", value = "5 mph") %>%
+  add_osm_feature(key ="highway") %>%
+  osmdata_sf()
+
+TenHx = opq(bbox = Westxy) %>%
+  add_osm_feature(key = "maxspeed", value = "10 mph") %>%
+  add_osm_feature(key ="highway") %>%
+  osmdata_sf()  # 19 osm lines - no change
+
+TwentyHx = opq(bbox = Westxy) %>%
+  add_osm_feature(key = "maxspeed", value = "20 mph") %>%
+  add_osm_feature(key ="highway") %>%
+  osmdata_sf() # 503 osmlines ie less
+
+ggplot() +
+  geom_sf(data = FiveHx$osm_lines, color = "#33a02c") +
+  geom_sf(data = TenHx$osm_lines, color = "#33a02c") +
+  geom_sf(data = TwentyHx$osm_lines, color = "#33a02c")
