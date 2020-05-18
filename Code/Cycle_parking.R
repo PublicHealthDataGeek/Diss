@@ -248,11 +248,12 @@ summary_PRK_PROVIS = cycle_parking %>%
   mutate_if(is.integer, ~replace(PRK_PROVIS, is.na(PRK_PROVIS), 0))
 summary(summary_PRK_PROVIS$PRK_PROVIS)
 sd(summary_PRK_PROVIS$PRK_PROVIS)
+sum(summary_PRK_PROVIS$PRK_PROVIS)
 
 
 summary_PRK_CPT = cycle_parking %>%
   mutate_if(is.integer, ~replace(PRK_CPT, is.na(PRK_CPT), 0)) 
 summary(summary_PRK_CPT$PRK_CPT)
 sd(summary_PRK_CPT$PRK_CPT)
-
+sum(summary_PRK_CPT$PRK_CPT)
 

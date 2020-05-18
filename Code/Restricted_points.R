@@ -76,7 +76,7 @@ qtm(n_restricted_pointsBYborough, "count")
   
 Restricted_points_borough_map = tm_shape(n_restricted_pointsBYborough) +
   tm_polygons("count", style = "fixed", palette = "Greens",
-              breaks = c(1, 5, 10, 15, 20, 50),
+              breaks = c(1, 5, 10, 15, 20),
               textNA = "Zero restricted points",
               colorNA = "grey") +
   tm_layout(legend.title.size = 1,
@@ -84,7 +84,7 @@ Restricted_points_borough_map = tm_shape(n_restricted_pointsBYborough) +
             legend.position = c("left","bottom"),
             legend.bg.alpha = 1)
   
-tmap_save(Restricted_points_borough_map, filename = "./Maps/Count_restricted_points_borough_map.png")
+tmap_save(Restricted_points_borough_map, filename = "./Maps/Restricted points/Count_restricted_points_borough_map.png")
 
 # Overall map of restricted points
 map_restricted_points = mapview(f_restricted_points$geometry, color = "blue", cex = 0.5)
